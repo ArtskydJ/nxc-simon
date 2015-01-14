@@ -1,0 +1,80 @@
+//Simon.nxc
+//Simon Clone
+//Joseph Dykstra
+
+#include "HighScore.nxc"
+#include "Button+-.nxc"
+
+#define HS_FILE "Simon.dat"
+
+const int maxLevels=50;
+int highscore;
+
+bool correctbutton(int INbutton) {
+	int tButtonHit = -1,  tCorrectButton = -1;
+	while (tButtonHit == -1) {
+		if (ButtonState(BTNLEFT))   tButtonHit = 0;
+		if (ButtonState(BTNCENTER)) tButtonHit = 1;
+		if (ButtonState(BTNRIGHT))  tButtonHit = 2;
+		if (tButtonHit != -1) {
+			if (tButtonHit == INbutton)    tCorrectButton = true;
+			else                           tCorrectButton = false;
+			RectOut(0, 0, 99, 16, 36); //Fill+Invert
+			CircleOut(tButtonHit*40+10, 8, 8, 32); //Fill
+			PlayTone((tButtonHit+1)*1000, 250); Wait(250);
+		}
+	}
+	until (ButtonState(BTNLEFT) == false &&
+		ButtonState(BTNCENTER) == false&&
+		ButtonState(BTNRIGHT) == false) {}
+	return tCorrectButton;
+}
+
+bool endofgame(int lev) {
+	ClearLine(LCD_LINE2); ClearLine(LCD_LINE8);
+	TextOut(25, LCD_LINE2, "Failure!", 0);
+	TextOut(32, LCD_LINE7, "", 0);
+	TextOut(2,  LCD_LINE8,  "Yes   Again?  No", 0);
+	PlayTone(2960, 500); Wait(500);
+	PlayTone(2794, 550); Wait(550);
+	PlayTone(2637, 950); Wait(950);
+	while(ButtonState(BTNLEFT)==false &&
+		ButtonState(BTNRIGHT)==false) {}
+	return (ButtonState(BTNLEFT))
+}
+
+task main() {
+	bool playagain=true;
+	while (playagain) {
+		ClearScreen();
+		int blink[maxLevels],  level=0,  i=0;
+		bool alive=true;
+		for (int i=0; i<maxLevels; i++) {
+			blink[i] = Random(3);
+		}
+		for (int i=0; alive; i++) {
+			if (level > readHigh(HS_FILE)) {
+				writeHigh(HS_FILE, level);
+			}
+			ClearScreen();
+			TextOut(32, LCD_LINE1, "SIMON", 0);
+			TextOut(10, LCD_LINE2, "Watch Close...", 0);
+			TextOut(0, LCD_LINE4, StrCat("Score     ", NumToStr(level)), 0);
+			TextOut(0, LCD_LINE5, StrCat("Highscore ", NumToStr( readHigh(HS_FILE) )), 0);
+			level += 1;
+			Wait(500);
+			for (i=0; i<level; i++) {
+				RectOut(0, 0, 99, 16, 36); //Fill+Invert
+				CircleOut(blink[i]*40+10, 8, 8, 32); //Fill
+				PlayTone(1000+(blink[i]*1000), 250); Wait(500);
+			}
+			ClearLine(LCD_LINE2);
+			RectOut(0, 0, 99, 16, 36); //Fill+Invert
+			TextOut(20, LCD_LINE2, "Repeat...", 0);
+			for (i=0; i<level && alive; i++) {
+				alive=correctbutton(blink[i]);
+			}
+		}
+		playagain=endofgame(level);
+	}
+}
