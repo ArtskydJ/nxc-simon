@@ -2,13 +2,30 @@
 //Simon Clone
 //Joseph Dykstra
 
-#include "HighScore.nxc"
-#include "Button+-.nxc"
+// https://github.com/ArtskydJ/nxc-modules
+#include "../nxc-modules/HighScore.nxc"
+#include "../nxc-modules/Button+-.nxc"
 
 #define HS_FILE "Simon.dat"
 
 const int maxLevels=50;
 int highscore;
+
+void clearIndicators() {
+	// Bug with ClearLine: It only clears X=0 through X=95.
+	// These pixels do not get cleared: X=96 through X=99 
+	ClearLine(LCD_LINE7); 
+	ClearLine(LCD_LINE8);
+}
+
+void blinkIndicator(int pos) {
+	clearIndicators();
+	for (int n = 3; n <= 3+16; n++) {
+		LineOut(pos*38+n, 15, pos*38+n, 0);
+	}
+	PlayTone((pos+1)*1000, 250);
+	Wait(250);
+}
 
 bool correctbutton(int INbutton) {
 	int tButtonHit = -1,  tCorrectButton = -1;
@@ -19,9 +36,7 @@ bool correctbutton(int INbutton) {
 		if (tButtonHit != -1) {
 			if (tButtonHit == INbutton)    tCorrectButton = true;
 			else                           tCorrectButton = false;
-			RectOut(0, 0, 99, 16, 36); //Fill+Invert
-			CircleOut(tButtonHit*40+10, 8, 8, 32); //Fill
-			PlayTone((tButtonHit+1)*1000, 250); Wait(250);
+			blinkIndicator(tButtonHit);
 		}
 	}
 	until (ButtonState(BTNLEFT) == false &&
@@ -64,12 +79,11 @@ task main() {
 			level += 1;
 			Wait(500);
 			for (i=0; i<level; i++) {
-				RectOut(0, 0, 99, 16, 36); //Fill+Invert
-				CircleOut(blink[i]*40+10, 8, 8, 32); //Fill
-				PlayTone(1000+(blink[i]*1000), 250); Wait(500);
+				blinkIndicator(blink[i]);
+				Wait(250);
 			}
 			ClearLine(LCD_LINE2);
-			RectOut(0, 0, 99, 16, 36); //Fill+Invert
+			clearIndicators();
 			TextOut(20, LCD_LINE2, "Repeat...", 0);
 			for (i=0; i<level && alive; i++) {
 				alive=correctbutton(blink[i]);
